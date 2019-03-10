@@ -3,18 +3,30 @@
  */
 
 const Data = require('../lib/data')
+const Helpers = require('../lib/helpers')
+const User = require('./User')
 // Class for all token requests
 class Token {
+  // Token id validation
+  static validateId (id) {
+    return typeof id === 'string' && id.trim().length === 20
+  } 
+
+  // Token extend validation
+  static validateExtend (extend) {
+    return typeof extend === 'boolean' && extend
+  }
+
   // Tokens - POST
-  // Required data: phone, password
+  // Required data: email, password
   // Optional data: none
   static post(data, callback) {
-    let { phone, password } = data.payload
-    phone = typeof (phone) === 'string' && phone.trim().length === 10 ? phone.trim() : false
-    password = typeof (password) === 'string' && password.trim().length > 0 ? password.trim() : false
-    if (phone && password) {
-      // Lookup user who matches that phone number 
-      Data.read('users', phone, (err, userData) => {
+    let { email, password } = data.payload
+    email = User.validateEmail(email.trim()) ? email.trim() : false
+    password = Helpers.validateString(password) ? password.trim() : false
+    if (email && password) {
+      // Lookup user who matches that email number 
+      Data.read('users', email, (err, userData) => {
         if (!err && userData) {
           // Hash the sent password and compare it to the hashed password stored in the user object.
           const hashedPassword = Helpers.hash(password)
@@ -23,7 +35,7 @@ class Token {
             const tokenId = Helpers.createRandomString(20)
 
             const expires = Date.now() + 1000 * 60 * 60
-            const tokenObject = { phone, id: tokenId, expires }
+            const tokenObject = { email, id: tokenId, expires }
             // Store the token
             Data.create('tokens', tokenId, tokenObject, err => {
               if (!err) {
@@ -49,7 +61,7 @@ class Token {
   static get(data, callback) {
     // Check that the id is valid
     let { id } = data.queryStringObject
-    id = typeof id === 'string' && id.trim().length === 20 ? id.trim() : false
+    id = Token.validateId(id) ? id.trim() : false
 
     if (id) {
       // Lookup the token
@@ -70,8 +82,8 @@ class Token {
   static put(data, callback) {
     // Check for the required field
     let { id, extend } = data.payload
-    id = typeof id === 'string' && id.trim().length === 20 ? id.trim() : false
-    extend = typeof extend === 'boolean' && extend
+    id = Token.validateId(id) ? id.trim() : false
+    extend = Token.validateExtend(extend)
 
     if (id && extend) {
       // Look up the token
@@ -105,9 +117,9 @@ class Token {
   // Required data: id
   // Optional data: none
   static delete(data, callback) {
-    // Check that the phone number is valid
+    // Check that the email number is valid
     let { id } = data.queryStringObject
-    id = typeof id === 'string' && id.trim().length === 20 ? id.trim() : false
+    id = Token.validateId(id) ? id.trim() : false
     // Lookup the token
     if (id) {
       Data.read('tokens', id, (err, data) => {
@@ -129,12 +141,12 @@ class Token {
   }
 
   // Verify if a given token is currently valid for a given user.
-  static verfiyToken(id, phone, callback) {
+  static verfiyToken(id, email, callback) {
     // Look up the token
     Data.read('tokens', id, (err, tokenData) => {
       if (!err && tokenData) {
         // Check that the token is for the given user and has not expired
-        if (tokenData.phone === phone && tokenData.expires > Date.now()) {
+        if (tokenData.email === email && tokenData.expires > Date.now()) {
           callback(true)
         } else {
           callback(false)

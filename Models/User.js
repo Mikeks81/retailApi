@@ -5,39 +5,50 @@
 // Dependencies
 const Data = require('../lib/data')
 const Helpers = require('../lib/helpers')
+const Token = require('./Token')
 
 class User {
+
+  static validateEmail (email) {
+    return User.validateString(email) && Helpers.validateEmail(email.trim())
+  }
+
+  static validateString (string) {
+    return User.validateString(string)
+  }
   // Users - POST
-  // Required data: firstName, lastName, phone, password, tosAgreement
+  // Required data: firstName, lastName, email, streetAddress
   // Optional data: none
   static post(data, callback) {
     // Check that all required fields are type correct and filled out
-    let { firstName, lastName, phone, password, tosAgreement } = data.payload
-    firstName = typeof (firstName) === 'string' && firstName.trim().length > 0 ? firstName.trim() : false
-    lastName = typeof (lastName) === 'string' && lastName.trim().length > 0 ? lastName.trim() : false
-    phone = typeof (phone) === 'string' && phone.trim().length === 10 ? phone.trim() : false
-    password = typeof (password) === 'string' && password.trim().length > 0 ? password.trim() : false
-    tosAgreement = typeof (tosAgreement) === 'boolean' && tosAgreement === true || false
+    let { firstName, lastName, email, streetAddress, password } = data.payload
 
-    if (firstName && lastName && phone && password && tosAgreement) {
+    // Validation of data
+    firstName = User.validateString(firstName) ? firstName.trim() : false
+    lastName = User.validateString(lastName) ? lastName.trim() : false
+    streetAddress = User.validateString(streetAddress) ? streetAddress.trim() : false
+    email = User.validateEmail(email) ? email.trim() : false
+    password = User.validateString(password) ? password.trim() : false
+
+    if (firstName && lastName && email && password && streetAddress) {
       // Make sure that the User doesn't already exist
-      Data.read('users', phone, (err, data) => {
+      Data.read('users', email, (err, data) => {
         if (err) {
           // if err - we haven't a matching entry we'll create one
           // Hash the password
           const hashedPassword = Helpers.hash(password)
 
           if (hashedPassword) {
-            // Create the user ovject
+            // Create the user object
             const userObject = {
               firstName,
               lastName,
-              phone,
+              email,
               password: hashedPassword,
-              tosAgreement
+              streetAddress
             }
 
-            Data.create('users', phone, userObject, (err) => {
+            Data.create('users', email, userObject, (err) => {
               if (!err) {
                 callback(200)
               } else {
@@ -49,7 +60,7 @@ class User {
             callback(500, { Error: 'Cold not hash the user\'s password' })
           }
         } else {
-          callback(400, { Error: 'A user with that phone number already exists.' })
+          callback(400, { Error: 'A user with that email number already exists.' })
         }
       })
     } else {
@@ -57,21 +68,21 @@ class User {
     }
   }
   // Users - GET
-  // Required data: phone, token
+  // Required data: email, token
   // Optional data; none
   static get(data, callback) {
-    // Check that the phone number is valid
-    let { phone } = data.queryStringObject
-    phone = typeof phone === 'string' && phone.trim().length === 10 ? phone.trim() : false
+    // Check that the email number is valid
+    let { email } = data.queryStringObject
+    email = User.validateEmail(email) ? email.trim() : false
 
-    if (phone) {
+    if (email) {
       // Get the token from the headers
       const token = typeof (data.headers.token) === 'string' ? data.headers.token : false
-      // Verify the given token is valid for the phone number.
-      _Tokens.verfiyToken(token, phone, (tokenIsValid) => {
+      // Verify the given token is valid for the email number.
+      Token.verfiyToken(token, email, (tokenIsValid) => {
         if (tokenIsValid) {
           // Lookup the user.
-          Data.read('users', phone, (err, data) => {
+          Data.read('users', email, (err, data) => {
             if (!err && data) {
               // Remove the has password from the user object before returning it to the request object
               const _data = { ...data }
@@ -91,28 +102,29 @@ class User {
   }
 
   // Users - PUT
-  // Required data: phone
-  // Optional data: firstName, lastName, password (at least one must be specified)
+  // Required data: email
+  // Optional data: firstName, lastName, password or streetAddress (at least one must be specified, to update)
   static put(data, callback) {
     // Check for the required field
-    let { firstName, lastName, phone, password } = data.payload
-    phone = typeof phone === 'string' && phone.trim().length === 10 ? phone.trim() : false
+    let { firstName, lastName, email, password, streetAddress } = data.payload
+    email = User.validateEmail(email) ? email.trim() : false
 
     // Check for the optional fields
-    firstName = typeof (firstName) === 'string' && firstName.trim().length > 0 ? firstName.trim() : false
-    lastName = typeof (lastName) === 'string' && lastName.trim().length > 0 ? lastName.trim() : false
-    password = typeof (password) === 'string' && password.trim().length > 0 ? password.trim() : false
+    firstName = User.validateString(firstName) ? firstName.trim() : false
+    lastName = User.validateString(lastName) ? lastName.trim() : false
+    password = User.validateString(password) ? password.trim() : false
+    streetAddress = User.validateString(streetAddress) ? streetAddress.trim() : false
 
-    // Error if the phone is invalid
-    if (phone) {
+    // Error if the email is invalid
+    if (email) {
       if (firstName || lastName || password) {
         // Get the token from the headers
         const token = typeof (data.headers.token) === 'string' ? data.headers.token : false
-        // Verify the given token is valid for the phone number.
-        _Tokens.verfiyToken(token, phone, (tokenIsValid) => {
+        // Verify the given token is valid for the email number.
+        Token.verfiyToken(token, email, (tokenIsValid) => {
           if (tokenIsValid) {
             // Lookup the user
-            Data.read('users', phone, (err, userData) => {
+            Data.read('users', email, (err, userData) => {
               if (!err && userData) {
                 // Update the fields necessary
                 if (firstName) {
@@ -126,7 +138,7 @@ class User {
                 }
 
                 // Store the new updates
-                Data.update('users', phone, userData, err => {
+                Data.update('users', email, userData, err => {
                   if (!err) {
                     callback(200)
                   } else {
@@ -146,26 +158,26 @@ class User {
         callback(400, { Error: 'Missing required fields' })
       }
     } else {
-      callback(400, { Error: 'Missing required field' })
+      callback(400, { Error: 'Missing required email field or is invalid' })
     }
   }
 
   // User - DELETE
-  // Required field: phone
+  // Required field: email
   static delete(data, callback) {
-    // Check that the phone number is valid
-    let { phone } = data.queryStringObject
-    phone = typeof phone === 'string' && phone.trim().length === 10 ? phone.trim() : false
+    // Check that the email number is valid
+    let { email } = data.queryStringObject
+    email = User.validateEmail(email) ? email.trim() : false
 
-    if (phone) {
+    if (email) {
       // Get the token from the headers
       const token = typeof (data.headers.token) === 'string' ? data.headers.token : false
-      // Verify the given token is valid for the phone number.
-      _Tokens.verfiyToken(token, phone, (tokenIsValid) => {
+      // Verify the given token is valid for the email number.
+      Token.verfiyToken(token, email, (tokenIsValid) => {
         if (tokenIsValid) {
-          Data.read('users', phone, (err, userData) => {
+          Data.read('users', email, (err, userData) => {
             if (!err && userData) {
-              Data.delete('users', phone, err => {
+              Data.delete('users', email, err => {
                 if (!err) {
                   // Delete each of the checks associated with the user
                   const userChecks = typeof userData.checks === 'object' && userData.checks instanceof Array ? userData.checks : []
@@ -207,7 +219,7 @@ class User {
         }
       })
     } else {
-      callback(400, { Error: 'Missing required fields' })
+      callback(400, { Error: 'Missing required email field or is invalid' })
     }
   }
 }
