@@ -4,16 +4,16 @@
 
 const Data = require('../lib/data')
 const Helpers = require('../lib/helpers')
-const User = require('./User')
+
 // Class for all token requests
 class Token {
   // Token id validation
-  static validateId (id) {
+  static _validateId (id) {
     return typeof id === 'string' && id.trim().length === 20
   } 
 
   // Token extend validation
-  static validateExtend (extend) {
+  static _validateExtend (extend) {
     return typeof extend === 'boolean' && extend
   }
 
@@ -22,7 +22,7 @@ class Token {
   // Optional data: none
   static post(data, callback) {
     let { email, password } = data.payload
-    email = User.validateEmail(email.trim()) ? email.trim() : false
+    email = Helpers.validateString(email) && Helpers.validateEmail(email.trim()) ? email.trim() : false
     password = Helpers.validateString(password) ? password.trim() : false
     if (email && password) {
       // Lookup user who matches that email number 
@@ -33,7 +33,12 @@ class Token {
           if (hashedPassword === userData.password) {
             // if valid, create a new token with a random name. Set expiration date 1 hour into the future.
             const tokenId = Helpers.createRandomString(20)
-
+            /**
+             * Expire token one hour from now.
+             * 1000ms in 1 second,
+             * 60 seconds in a minute,
+             * 60 minutes in an hour
+             */
             const expires = Date.now() + 1000 * 60 * 60
             const tokenObject = { email, id: tokenId, expires }
             // Store the token
@@ -61,7 +66,7 @@ class Token {
   static get(data, callback) {
     // Check that the id is valid
     let { id } = data.queryStringObject
-    id = Token.validateId(id) ? id.trim() : false
+    id = Token._validateId(id) ? id.trim() : false
 
     if (id) {
       // Lookup the token
@@ -82,8 +87,8 @@ class Token {
   static put(data, callback) {
     // Check for the required field
     let { id, extend } = data.payload
-    id = Token.validateId(id) ? id.trim() : false
-    extend = Token.validateExtend(extend)
+    id = Token._validateId(id) ? id.trim() : false
+    extend = Token._validateExtend(extend)
 
     if (id && extend) {
       // Look up the token
@@ -119,7 +124,7 @@ class Token {
   static delete(data, callback) {
     // Check that the email number is valid
     let { id } = data.queryStringObject
-    id = Token.validateId(id) ? id.trim() : false
+    id = Token._validateId(id) ? id.trim() : false
     // Lookup the token
     if (id) {
       Data.read('tokens', id, (err, data) => {

@@ -9,12 +9,12 @@ const Token = require('./Token')
 
 class User {
 
-  static validateEmail (email) {
-    return User.validateString(email) && Helpers.validateEmail(email.trim())
+  static _validateEmail (email) {
+    return Helpers._validateString(email) && Helpers._validateEmail(email.trim())
   }
 
-  static validateString (string) {
-    return User.validateString(string)
+  static _validateString (string) {
+    return Helpers._validateString(string)
   }
   // Users - POST
   // Required data: firstName, lastName, email, streetAddress
@@ -24,11 +24,11 @@ class User {
     let { firstName, lastName, email, streetAddress, password } = data.payload
 
     // Validation of data
-    firstName = User.validateString(firstName) ? firstName.trim() : false
-    lastName = User.validateString(lastName) ? lastName.trim() : false
-    streetAddress = User.validateString(streetAddress) ? streetAddress.trim() : false
-    email = User.validateEmail(email) ? email.trim() : false
-    password = User.validateString(password) ? password.trim() : false
+    firstName = User._validateString(firstName) ? firstName.trim() : false
+    lastName = User._validateString(lastName) ? lastName.trim() : false
+    streetAddress = User._validateString(streetAddress) ? streetAddress.trim() : false
+    email = User._validateEmail(email) ? email.trim() : false
+    password = User._validateString(password) ? password.trim() : false
 
     if (firstName && lastName && email && password && streetAddress) {
       // Make sure that the User doesn't already exist
@@ -73,7 +73,7 @@ class User {
   static get(data, callback) {
     // Check that the email number is valid
     let { email } = data.queryStringObject
-    email = User.validateEmail(email) ? email.trim() : false
+    email = User._validateEmail(email) ? email.trim() : false
 
     if (email) {
       // Get the token from the headers
@@ -107,13 +107,13 @@ class User {
   static put(data, callback) {
     // Check for the required field
     let { firstName, lastName, email, password, streetAddress } = data.payload
-    email = User.validateEmail(email) ? email.trim() : false
+    email = User._validateEmail(email) ? email.trim() : false
 
     // Check for the optional fields
-    firstName = User.validateString(firstName) ? firstName.trim() : false
-    lastName = User.validateString(lastName) ? lastName.trim() : false
-    password = User.validateString(password) ? password.trim() : false
-    streetAddress = User.validateString(streetAddress) ? streetAddress.trim() : false
+    firstName = User._validateString(firstName) ? firstName.trim() : false
+    lastName = User._validateString(lastName) ? lastName.trim() : false
+    password = User._validateString(password) ? password.trim() : false
+    streetAddress = User._validateString(streetAddress) ? streetAddress.trim() : false
 
     // Error if the email is invalid
     if (email) {
@@ -167,7 +167,7 @@ class User {
   static delete(data, callback) {
     // Check that the email number is valid
     let { email } = data.queryStringObject
-    email = User.validateEmail(email) ? email.trim() : false
+    email = User._validateEmail(email) ? email.trim() : false
 
     if (email) {
       // Get the token from the headers
