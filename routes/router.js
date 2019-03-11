@@ -29,6 +29,7 @@ const router = (req, res) => {
   // Get the headers as an Object
   const headers = req.headers
 
+
   // Get the payload if there is any
   const decoder = new StringDecoder('utf-8')
   let buffer = ''

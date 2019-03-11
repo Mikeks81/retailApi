@@ -4,6 +4,8 @@ const routes = {
   ping: RouteHandler.ping,
   users: RouteHandler.users,
   tokens: RouteHandler.tokens,
+  shoppingcart: RouteHandler.shoppingCart,
+  menuitems: RouteHandler.menuitems
   // checks: Handlers.checks
 }
 
