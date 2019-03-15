@@ -11,6 +11,13 @@ class MenuItems {
   }
 
   /**
+   * lists the menu
+   */
+  static list () {
+    return menuitems
+  }
+
+  /**
    * GET
    * @return {Array} all menuitem objects
    */

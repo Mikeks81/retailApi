@@ -1,9 +1,13 @@
 const Data = require('../lib/data')
 const MenuItems = require('./MenuItems')
-const Token = require('./Token')
 const Helpers = require('../lib/helpers')
 
 class ShoppingCart {
+  /**
+   * 
+   * @param {string OR Array} itemName The items added to shopping cart ultimately will be converted to an Array.
+   * ItemName can be an Array or String.
+   */
   static _validateItemName (itemName) {
     const typeofItemName = typeof (itemName) === 'string'
     let validation = false
@@ -13,6 +17,23 @@ class ShoppingCart {
       validation = itemName.length > 0
     }
     return validation
+  }
+
+  /**
+   * validates that any item in the shopping cart is actually in the menu
+   * @param {*} itemName 
+   */
+  static _validateMenuItems (itemName) {
+    let valid = true
+    itemName = typeof (itemName) === 'string' ? [itemName] : itemName
+    itemName.forEach((item) => {
+      let hasMatch = false
+      MenuItems.list().forEach((mItem) => {
+        if (item === mItem.itemName) hasMatch = true
+      })
+      if (!hasMatch) valid = false
+    })
+    return valid
   }
 
   static list () {
@@ -29,6 +50,7 @@ class ShoppingCart {
     let {token} = data.headers
     // validation
     itemName = ShoppingCart._validateItemName(itemName) ? itemName : false
+    itemName = ShoppingCart._validateMenuItems(itemName) ? itemName : false
     token = Helpers.validateTokenString(token) ? token : false
 
     if (itemName) {
@@ -79,10 +101,10 @@ class ShoppingCart {
           }
         })
       } else {
-        callback(400, 'Token is invalid.')
+        callback(400, {Error: 'Token is invalid.'})
       }
     } else {
-      callback(400, {Error: 'Missing itemName or itemName is not valid.'})
+      callback(400, {Error: 'Missing itemName(s) or itemName(s) is not valid.'})
     }
   }
   
@@ -97,6 +119,7 @@ class ShoppingCart {
     let { itemName } = data.payload
     let { token } = data.headers
     itemName = ShoppingCart._validateItemName(itemName) ? itemName : false
+    itemName = ShoppingCart._validateMenuItems(itemName) ? itemName : false
     token = Helpers.validateTokenString(token) ? token : false
     if (itemName && token) {
       // Get the user by the token email. Look up token
@@ -118,32 +141,31 @@ class ShoppingCart {
                       email,
                       items: itemName instanceof Array ? itemName : [itemName]
                     }
-                    console.log({shoppingCartObject});
                     // Update the shopping cart
                     Data.update('shoppingCarts', userData.shoppingCartId, shoppingCartObject, err => {
                       if (!err) {
-                        callback(200, 'Succesfully updated the shoping cart')
+                        callback(200, {Error: 'Succesfully updated the shoping cart'})
                       } else {
-                        callback(500, 'Error: Could not update shopping cart.')
+                        callback(500, {Error: 'Error: Could not update shopping cart.'})
                       }
                     })
                   } else {
-                    callback(500, 'Could not locate the shopping cart.')
+                    callback(500, {Error: 'Could not locate the shopping cart.'})
                   }
                 })
               } else {
-                callback(400, 'Missing a shopping cart, a shopping cart must be created first.')
+                callback(400, {Error: 'Missing a shopping cart, a shopping cart must be created first.'})
               }
             })
           } else {
             callback(400, {Error: 'Token has expired.'})
           }
         } else {
-          callback(403, 'Could not find token.')
+          callback(403, {Error: 'Could not find token.'})
         }
       })
     } else {
-      callback(400, 'Validation of itemName or token has failed.')
+      callback(400, {Error: 'Validation of itemName(s) or token has failed.'})
     }
   }
   /**
@@ -173,11 +195,11 @@ class ShoppingCart {
                   if (!err && shoppingCartData) {
                     callback(200, shoppingCartData)
                   } else {
-                    callback(500, 'Could not locate the shopping cart.')
+                    callback(500, {Error: 'Could not locate the shopping cart.'})
                   }
                 })
               } else {
-                callback(400, 'Missing a shopping cart, a shopping cart must be created first.')
+                callback(400, {Error: 'Missing a shopping cart, a shopping cart must be created first.'})
               }
             })
           } else {
@@ -188,7 +210,7 @@ class ShoppingCart {
         }
       })
     } else {
-      callback(400, 'Missing validation token or is invalid.')
+      callback(400, {Error: 'Missing validation token or is invalid.'})
     }
   }
 
@@ -208,6 +230,7 @@ class ShoppingCart {
       Data.read('tokens', token, (err, tokenData) => {
         if (!err && tokenData) {
           const { email, expires } = tokenData
+          console.log({expires, t: Date.now()});
           if (expires > Date.now()) {
             // Look up user by email in the token object
             Data.read('users', email, (err, userData) => {
@@ -220,7 +243,7 @@ class ShoppingCart {
                       ...userData,
                       shoppingCartId: null
                     }
-                    
+
                     // Remove the shopping cart id from the user
                     Data.update('users', email, userObject, err => {
                       if (!err) {
