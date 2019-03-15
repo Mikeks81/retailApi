@@ -6,5 +6,13 @@ module.exports = [
   {
     "itemName": "hamburger",
     "price": 3.00
+  },
+  {
+    "itemName": "fries",
+    "price": 2.00
+  },
+  {
+    "itemName": "tuMomma",
+    "price": 1.50
   }
 ]
