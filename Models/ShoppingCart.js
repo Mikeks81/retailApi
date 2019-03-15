@@ -26,15 +26,15 @@ class ShoppingCart {
       // Look up the user by reading the token
       Data.read('tokens', token, (err, tokenData) => {
         if (!err && tokenData) {
-          const userEmail = tokenData.email
+          const { email } = tokenData
 
           // Lookup the user data
-          Data.read('users', userEmail, (err, userData) => {
+          Data.read('users', email, (err, userData) => {
             if (!err && userData && !userData.shoppingCartId) {
 
                 const shoppingCartId = Helpers.createRandomString(20)
                 const shoppingCartObject = {
-                  userEmail,
+                  email,
                   items: [itemName]
                 }
                 // Save the object
@@ -44,7 +44,7 @@ class ShoppingCart {
                     userData.shoppingCartId = shoppingCartId
 
                     // Save the new user data
-                    Data.update('users', userEmail, userData, (err) => {
+                    Data.update('users', email, userData, (err) => {
                       if (!err) {
                         // Return the data about the check
                         callback(200, shoppingCartObject)
@@ -73,8 +73,46 @@ class ShoppingCart {
   static put (data, callback) {
 
   }
+  /**
+   * ShoppingCart - GET
+   * @param {object} data 
+   * @param {function} callback 
+   */
   static get (data, callback) {
+    let { token } = data.headers
+    console.log({token})
+    token = Helpers.validateString(token) ? token : false
+    if (token) {
 
+      // Get the user by the token email. Look up token
+      Data.read('tokens', token, (err, tokenData) => {
+        if (!err && tokenData) {
+          const { email } = tokenData
+
+          // Look up user by email in the token object
+          Data.read('users', email, (err, userData) => {
+            if (!err && userData && userData.shoppingCartId) {
+
+              // Look up the users shopping cart.
+              Data.read('shoppingCarts', userData.shoppingCartId, (err, shoppingCartData) => {
+                
+                if (!err && shoppingCartData) {
+                  callback(200, shoppingCartData)
+                } else {
+                  callback(500, 'Could not locate the shopping cart.')
+                }
+              })
+            } else {
+              callback(400, 'Missing a shopping cart, a shopping cart must be created first.')
+            }
+          })
+        } else {
+          callback(403)
+        }
+      })
+    } else {
+      callback(400, 'Missing validation token or is invalid.')
+    }
   }
   static delete (data, callback) {
 
