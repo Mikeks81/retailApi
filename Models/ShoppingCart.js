@@ -36,8 +36,17 @@ class ShoppingCart {
     return valid
   }
 
-  static list () {
-
+  /**
+   * Will get teh shopping cart items and lookup and calculate the sum of all items.
+   * @param {Object} shoppingCartObject The entire shopping cart Ojbect
+   */
+  static getCartTotal (shoppingCartObject) {
+    const { items } = shoppingCartObject
+    let total = 0
+    items.forEach((item) => {
+      total = total + MenuItems.getMenuItemsbyItemName(item)[0].price
+    })
+    return total
   }
 
   /**
@@ -193,7 +202,9 @@ class ShoppingCart {
                 Data.read('shoppingCarts', userData.shoppingCartId, (err, shoppingCartData) => {
   
                   if (!err && shoppingCartData) {
-                    callback(200, shoppingCartData)
+                    // Calculate the shoppingCart total
+                    const total = ShoppingCart.getCartTotal(shoppingCartData)
+                    callback(200, {...shoppingCartData, total})
                   } else {
                     callback(500, {Error: 'Could not locate the shopping cart.'})
                   }
