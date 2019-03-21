@@ -42,11 +42,14 @@ class ShoppingCart {
    */
   static getCartTotal (shoppingCartObject) {
     const { items } = shoppingCartObject
+    let itemized = []
     let total = 0
     items.forEach((item) => {
-      total = total + MenuItems.getMenuItemsbyItemName(item)[0].price
+      const itemObj = MenuItems.getMenuItemsbyItemName(item)[0]
+      itemized.push(itemObj)
+      total = total + itemObj.price
     })
-    return total
+    return {total, itemized}
   }
 
   /**
@@ -203,8 +206,8 @@ class ShoppingCart {
   
                   if (!err && shoppingCartData) {
                     // Calculate the shoppingCart total
-                    const total = ShoppingCart.getCartTotal(shoppingCartData)
-                    callback(200, {...shoppingCartData, total})
+                    const data = ShoppingCart.getCartTotal(shoppingCartData)
+                    callback(200, {...shoppingCartData, ...data})
                   } else {
                     callback(500, {Error: 'Could not locate the shopping cart.'})
                   }
