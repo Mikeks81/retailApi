@@ -200,10 +200,10 @@ class ShoppingCart {
             // Look up user by email in the token object
             Data.read('users', email, (err, userData) => {
               if (!err && userData && userData.shoppingCartId) {
-  
+
                 // Look up the users shopping cart.
                 Data.read('shoppingCarts', userData.shoppingCartId, (err, shoppingCartData) => {
-  
+
                   if (!err && shoppingCartData) {
                     // Calculate the shoppingCart total
                     const data = ShoppingCart.getCartTotal(shoppingCartData)
